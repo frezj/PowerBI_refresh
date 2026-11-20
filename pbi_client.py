@@ -43,9 +43,17 @@ def _require(env, names):
         raise ConfigError('Missing environment variables: ' + ', '.join(missing))
 
 
-# Read auth settings from env
+# Read auth settings from env. Service principal if PBI_CLIENT_SECRET is set.
 def load_auth_config(env=None):
     env = os.environ if env is None else env
+    if env.get('PBI_CLIENT_SECRET'):
+        _require(env, ['PBI_TENANT_ID', 'PBI_CLIENT_ID'])
+        return {
+            'mode': 'service_principal',
+            'tenant_id': env['PBI_TENANT_ID'],
+            'client_id': env['PBI_CLIENT_ID'],
+            'client_secret': env['PBI_CLIENT_SECRET'],
+        }
     _require(env, ['PBI_TENANT_ID', 'PBI_USERNAME', 'PBI_PASSWORD'])
     return {
         'mode': 'password',
@@ -71,16 +79,23 @@ class TokenProvider:
     def __init__(self, auth):
         self.auth = auth
         authority = f"https://login.microsoftonline.com/{auth['tenant_id']}"
-        self.app = msal.PublicClientApplication(auth['client_id'], authority=authority)
+        if auth['mode'] == 'service_principal':
+            self.app = msal.ConfidentialClientApplication(
+                auth['client_id'], authority=authority, client_credential=auth['client_secret'])
+        else:
+            self.app = msal.PublicClientApplication(auth['client_id'], authority=authority)
 
     def __call__(self):
-        result = None
-        accounts = self.app.get_accounts(username=self.auth['username'])
-        if accounts:
-            result = self.app.acquire_token_silent(SCOPE, account=accounts[0])
-        if not result:
-            result = self.app.acquire_token_by_username_password(
-                self.auth['username'], self.auth['password'], scopes=SCOPE)
+        if self.auth['mode'] == 'service_principal':
+            result = self.app.acquire_token_for_client(scopes=SCOPE)
+        else:
+            result = None
+            accounts = self.app.get_accounts(username=self.auth['username'])
+            if accounts:
+                result = self.app.acquire_token_silent(SCOPE, account=accounts[0])
+            if not result:
+                result = self.app.acquire_token_by_username_password(
+                    self.auth['username'], self.auth['password'], scopes=SCOPE)
         if result and 'access_token' in result:
             return result['access_token']
         result = result or {}
