@@ -109,6 +109,23 @@ Exit codes, useful for schedulers:
 - **In-progress refresh.** The refresh history shows status `Unknown` while a refresh is running. `Check_Not_Refreshed.py` does not touch such datasets.
 - **Client id.** The default client id is a public Microsoft app. Some tenants block it or require admin consent. In that case register your own public client app in Entra ID with the delegated permission `Dataset.ReadWrite.All` for Power BI Service and put its id in `PBI_CLIENT_ID`.
 
+## Tests
+
+The tests do not call Power BI or Entra ID. HTTP is mocked with [responses](https://github.com/getsentry/responses) and `msal` is replaced with a fake, so no credentials are needed.
+
+```bash
+pip install -r requirements-dev.txt
+ruff check .
+pytest
+```
+
+What is covered:
+
+- `pbi_client.py`: config from env vars, retries on `429` and `5xx` with `Retry-After` and backoff, no retry for `POST`, paging via `continuationUri`, token errors.
+- `Refresh_All.py` and `Check_Not_Refreshed.py`: which datasets get a refresh, push datasets, errors in one workspace or dataset do not stop the run, exit codes, the Enter pause only in a console.
+
+GitHub Actions runs the same checks on every push to `main` and on pull requests, on Python 3.10 and 3.13. Older versions are not available on the current Ubuntu runner.
+
 ## Links
 
 - [Refresh Dataset In Group](https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/refresh-dataset-in-group)

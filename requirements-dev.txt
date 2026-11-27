@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest>=7
+responses>=0.23
+ruff>=0.5

@@ -183,8 +183,7 @@ class PowerBIClient:
         url = path
         for _ in range(max_pages):
             data = self.get(url, action=action, **kwargs)
-            for item in data.get(key) or []:
-                yield item
+            yield from data.get(key) or []
             url = data.get('continuationUri')
             if not url or data.get('lastResultSet'):
                 return
