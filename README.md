@@ -124,7 +124,7 @@ What is covered:
 - `pbi_client.py`: config from env vars, retries on `429` and `5xx` with `Retry-After` and backoff, no retry for `POST`, paging via `continuationUri`, token errors.
 - `Refresh_All.py` and `Check_Not_Refreshed.py`: which datasets get a refresh, push datasets, errors in one workspace or dataset do not stop the run, exit codes, the Enter pause only in a console.
 
-GitHub Actions runs the same checks on every push to `main` and on pull requests, on Python 3.9 and 3.13.
+GitHub Actions runs the same checks on every push to `main` and on pull requests, on Python 3.10 and 3.13. Older versions are not available on the current Ubuntu runner.
 
 ## Links
 
